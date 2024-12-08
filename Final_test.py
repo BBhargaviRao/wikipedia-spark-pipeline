@@ -53,11 +53,11 @@ class TestMutualLinks(unittest.TestCase):
     
             # Schema for "page" table
         page_schema = StructType([
-                StructField("page_id", LongType(), True),
+                StructField("page_id", IntegerType(), True),
                 StructField("page_title", StringType(), True),
                 StructField("page_namespace", IntegerType(), True),
                 StructField("page_content_model", StringType(), True),
-                StructField("page_is_redirect", BooleanType(), True),
+                StructField("page_is_redirect", StringType(), True),
             ])
 
             # Schema for "pagelinks" table
@@ -82,27 +82,8 @@ class TestMutualLinks(unittest.TestCase):
                 StructField("lt_namespace", IntegerType(), True),
             ])
 
-        #     return page_schema, pagelinks_schema, redirect_schema, linktarget_schema
-
-        # page_schema, pagelinks_schema, redirect_schema, linktarget_schema = get_schemas()
-
-        # # Reading data
-        # page_file_path = "./test/data/page.jsonl"
-        # linktarget_file_path = "./test/data/linktarget.jsonl"
-        # pagelinks_file_path = "./test/data/pagelinks.jsonl"
-        # redirect_file_path = "./test/data/redirect.jsonl"
-
-        # # Load JSON files with their respective schemas
-        # page_df = spark.read.schema(page_schema).json(page_file_path)
-        # pagelinks_df = spark.read.schema(linktarget_schema).json(linktarget_file_path)
-        # redirect_df = spark.read.schema(pagelinks_schema).json(pagelinks_file_path)
-        # linktarget_df = spark.read.schema(redirect_schema).json(redirect_file_path)
-        # print(page_df)
-
-        # Read JSON files with schemas using the function
-
-        page_df = read_json(spark, "/Users/bhargaviraobondada/Downloads/test/data/linktarget.jsonl", page_schema)
-        pagelinks_df = read_json(spark, "/Users/bhargaviraobondada/Downloads/test/data/page.jsonl", pagelinks_schema)
+        page_df = read_json(spark, "/Users/bhargaviraobondada/Downloads/test/data/page.jsonl", page_schema)
+        pagelinks_df = read_json(spark, "/Users/bhargaviraobondada/Downloads/test/data/pagelinks.jsonl", pagelinks_schema)
         redirect_df = read_json(spark, "/Users/bhargaviraobondada/Downloads/test/data/redirect.jsonl", redirect_schema)
         linktarget_df = read_json(spark, "/Users/bhargaviraobondada/Downloads/test/data/linktarget.jsonl", linktarget_schema)
 
