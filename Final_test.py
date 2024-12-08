@@ -96,7 +96,7 @@ class TestMutualLinks(unittest.TestCase):
 
         # Process the wiki data to find mutual links
         mutual_links = process_wiki_data(
-            spark, page_df, linktarget_df, pagelinks_df, redirect_df
+            page_df, linktarget_df, pagelinks_df, redirect_df
         )
 
         # Write mutual links to a file
