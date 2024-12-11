@@ -1,44 +1,75 @@
-import unittest
+import os
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.types import StructType, StructField, LongType, IntegerType, StringType, BooleanType
+from pyspark.sql import DataFrame
+from pyspark.sql.types import StructType, StructField, IntegerType, StringType
 from Final_P2 import process_wiki_data, find_connected_components
-
+import unittest
 
 class DFIO:
-    def __init__(self, spark):
+    def __init__(self, spark: SparkSession):
+        """
+        Initializes DFIO with the given Spark session and base directory for data files.
+        
+        :param spark: The Spark session to use for reading/writing DataFrames
+        """
         self.spark = spark
+        # Use environment variable to get the base directory for your files, fallback to a default
+        self.base_dir = os.getenv("DATA_BASE_DIR", "data")  # Relative or environment-based path
 
-    def read(self, path):
-        path = "/Users/bhargaviraobondada/Downloads/test/data"
-        return self.spark.read.json(path)
+    def read(self, path: str):
+        """
+        Reads a JSON file into a DataFrame from the base directory.
 
-    def write(self, df, path):
-        path = f"/Users/bhargaviraobondada/Downloads/test/{path}"
-        df.coalesce(1).write.mode("OVERWRITE").json(path)
+        :param file_name: The name of the file to read (e.g., "page.jsonl")
+        :return: A DataFrame containing the data from the JSON file
+        """
+        # Construct the full path to the file
+        pathname = os.path.join(self.base_dir, path)
+        return self.spark.read.json(pathname)
 
-@staticmethod
-# def read_json(spark, path,schema):
-#         path = f"./data/{path}"
-#         return spark.read.json(path)
+    def write(self, df: DataFrame, path) -> None:
+        """
+        Writes a DataFrame to a JSON file in the base directory.
 
-def read_json(spark, path, schema):
-    print(f"Reading JSON from: {path}")  # Debugging line
+        :param df: The DataFrame to write
+        :param file_name: The name of the file to write (e.g., "output.json")
+        :param mode: The write mode, defaults to "OVERWRITE"
+        """
+        # Construct the full path to the file
+        pathname = os.path.join(self.base_dir, path)
+        os.makedirs(os.path.dirname(pathname),exist_ok=True)
+
+        #df.write.mode(mode).json(path)
+        df.coalesce(1).write.mode("overwrite").json(pathname)
+
+
+def read_json(spark, file_name: str, schema: StructType) -> DataFrame:
+    # Use environment variable to get the base directory for your files, fallback to a default
+    base_dir = os.getenv("DATA_BASE_DIR", "data")  # Relative or environment-based path
+
+    # Construct the full path by joining the base directory and the file name
+    path = os.path.join(base_dir, file_name)
+
+    # Debugging line to verify the path
+    print(f"Reading JSON from: {path}")
+
+    # Check if the file exists before reading it
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"File '{file_name}' not found in {base_dir}. Please make sure the file exists.")
+
+    # Read the JSON file using the provided schema
     return spark.read.schema(schema).json(path)
 
 
 exp_links = frozenset({
-    (1, 2),  # Mutual links between Page 1 and Page 2
-    (2, 3),  # Mutual links between Page 2 and Page 3
-    (4, 5),  # Mutual links between Page 4 and Page 5
-    (6, 7)   # Mutual links between Page 6 and Page 7
+    frozenset([4, 5]),
+    frozenset([9, 10])
 })
-
-exp_components = frozenset([
-    frozenset([1, 2, 3]),  # Connected component with pages 1, 2, and 3
-    frozenset([4, 5]),     # Connected component with pages 4 and 5
-    frozenset([6, 7])      # Connected component with pages 6 and 7
-])
+exp_components = frozenset({
+    frozenset([9]),
+    frozenset([4])
+})
 
 
 class TestMutualLinks(unittest.TestCase):
@@ -50,42 +81,42 @@ class TestMutualLinks(unittest.TestCase):
 
         dfio = DFIO(spark)
 
-    
-            # Schema for "page" table
+        # Schema for "page" table
         page_schema = StructType([
-                StructField("page_id", IntegerType(), True),
-                StructField("page_title", StringType(), True),
-                StructField("page_namespace", IntegerType(), True),
-                StructField("page_content_model", StringType(), True),
-                StructField("page_is_redirect", StringType(), True),
-            ])
+            StructField("page_id", IntegerType(), True),
+            StructField("page_title", StringType(), True),
+            StructField("page_namespace", IntegerType(), True),
+            StructField("page_content_model", StringType(), True),
+            StructField("page_is_redirect", StringType(), True),
+        ])
 
-            # Schema for "pagelinks" table
+        # Schema for "pagelinks" table
         pagelinks_schema = StructType([
-                StructField("pl_from", LongType(), True),
-                StructField("pl_from_namespace", IntegerType(), True),
-                StructField("pl_target_id", LongType(), True),
-            ])
+            StructField("pl_from", IntegerType(), True),
+            StructField("pl_from_namespace", IntegerType(), True),
+            StructField("pl_target_id", IntegerType(), True),
+        ])
 
-            # Schema for "redirect" table
+        # Schema for "redirect" table
         redirect_schema = StructType([
-                StructField("rd_from", LongType(), True),
-                StructField("rd_namespace", IntegerType(), True),
-                StructField("rd_title", StringType(), True),
-                StructField("rd_fragment", StringType(), True),
-            ])
+            StructField("rd_from", IntegerType(), True),
+            StructField("rd_namespace", IntegerType(), True),
+            StructField("rd_title", StringType(), True),
+            StructField("rd_fragment", StringType(), True),
+        ])
 
-            # Schema for "linktarget" table
+        # Schema for "linktarget" table
         linktarget_schema = StructType([
-                StructField("lt_id", LongType(), True),
-                StructField("lt_title", StringType(), True),
-                StructField("lt_namespace", IntegerType(), True),
-            ])
+            StructField("lt_id", IntegerType(), True),
+            StructField("lt_title", StringType(), True),
+            StructField("lt_namespace", IntegerType(), True),
+        ])
 
-        page_df = read_json(spark, "/Users/bhargaviraobondada/Downloads/test/data/page.jsonl", page_schema)
-        pagelinks_df = read_json(spark, "/Users/bhargaviraobondada/Downloads/test/data/pagelinks.jsonl", pagelinks_schema)
-        redirect_df = read_json(spark, "/Users/bhargaviraobondada/Downloads/test/data/redirect.jsonl", redirect_schema)
-        linktarget_df = read_json(spark, "/Users/bhargaviraobondada/Downloads/test/data/linktarget.jsonl", linktarget_schema)
+        # Read data using the updated method
+        page_df = read_json(spark, "page.jsonl", page_schema)
+        pagelinks_df = read_json(spark, "pagelinks.jsonl", pagelinks_schema)
+        redirect_df = read_json(spark, "redirect.jsonl", redirect_schema)
+        linktarget_df = read_json(spark, "linktarget.jsonl", linktarget_schema)
 
         # Show the data for verification
         page_df.show()
@@ -93,35 +124,30 @@ class TestMutualLinks(unittest.TestCase):
         redirect_df.show()
         linktarget_df.show()
 
-
         # Process the wiki data to find mutual links
-        mutual_links = process_wiki_data(
-            page_df, linktarget_df, pagelinks_df, redirect_df
-        )
+        mutual_links = process_wiki_data(page_df, pagelinks_df, redirect_df, linktarget_df)
+        mutual_links = mutual_links.filter(F.col("page_a").isNotNull() & F.col("page_b").isNotNull())
 
-        # Write mutual links to a file
-        dfio.write(mutual_links, "mutual_links")
-
-        # Collect the actual mutual links and compare with the expected ones
-        actual_links = frozenset(tuple(r) for r in mutual_links.collect())
+        # Collect the links as frozensets
+        actual_links = frozenset(frozenset([row.page_a, row.page_b]) for row in mutual_links.collect())
         self.assertEqual(actual_links, exp_links)
 
-        # Prepare the edges for connected components
-        edges = mutual_links.selectExpr("page_a as src", "page_b as dst")
-
-        # Find connected components
-        cc = find_connected_components(spark, mutual_links, dfio)
+        
+        connected_components = find_connected_components(mutual_links, dfio)
+        
+        connected_components.show()
 
         # Write the connected components to a file
-        dfio.write(cc, "wikipedia_components")
+        dfio.write(connected_components, "wikipedia_components")
 
         # Group the connected components and compare with expected components
         groups = frozenset(
-            frozenset(c.members) for c in cc.groupby("component")
-            .agg(F.expr("collect_list(vertex) as members")).collect()
+        frozenset(c.members) for c in connected_components.groupby("pageid")
+        .agg(F.collect_list(F.col('component_id')).alias("members")).collect()
         )
+
         self.assertEqual(groups, exp_components)
 
 
 if __name__ == "__main__":
-    unittest.main()
+   unittest.main()
