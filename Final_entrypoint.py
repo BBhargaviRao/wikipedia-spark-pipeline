@@ -24,11 +24,7 @@ mutual_links = process_wiki_data(page_df, pagelinks_df,redirect_df,linktarget_df
 
 dfio.write(mutual_links, "mutual_links")
 mutual_links = dfio.read("mutual_links")
-
-s3_bucket = "bhargaviraobucket"
-s3_path = "iteration_"
-
-connected_components = find_connected_components(mutual_links, dfio, s3_bucket, s3_path)
+connected_components = find_connected_components(mutual_links, dfio)
 
 dfio.write(connected_components, "wikipedia_components")
 
