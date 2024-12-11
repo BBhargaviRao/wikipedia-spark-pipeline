@@ -120,9 +120,10 @@ def process_wiki_data(page_df, pagelinks_df, redirect_df, linktarget_df):
 def find_connected_components(
     mutual_links_df: DataFrame, 
     dfio,
-    s3_bucket: str, 
-    s3_path: str,
+    # s3_bucket: str, 
+    # s3_path: str,
     checkpoint_interval: int = 3,
+    checkpoint_dir:str ="checkpoint"
 ):
     iteration = 0
     converged = False
@@ -185,19 +186,11 @@ def find_connected_components(
             "min_component_id", "component_id"
         )
 
-        # # Checkpoint and save to S3 every few iterations
-        # if iteration % checkpoint_interval == 0 or converged:
-        #     checkpoint_path = f"s3://{s3_bucket}/{s3_path}/iteration_{iteration}/"
-        #     combined_links_with_id_df.write.mode("overwrite").parquet(checkpoint_path)
-        #     print(f"Checkpoint saved to {checkpoint_path}")
-        #     combined_links_with_id_df = spark.read.parquet(checkpoint_path)
-        #     print(f"Checkpoint read from {checkpoint_path}")
-
         if iteration % checkpoint_interval == 0 or converged:
-            checkpoint_path = f"s3://{s3_bucket}/{s3_path}/iteration_{iteration}/"
+            checkpoint_path = f"{checkpoint_dir}/iteration_{iteration+1}"
     
         # Write the checkpoint
-            dfio.write(combined_links_with_id_df, path=checkpoint_path, mode="overwrite")
+            dfio.write(combined_links_with_id_df, path=checkpoint_path)
             print(f"Checkpoint saved to {checkpoint_path}")
     
         # Read the checkpoint back
@@ -205,23 +198,3 @@ def find_connected_components(
             print(f"Checkpoint read from {checkpoint_path}")
 
     return combined_links_with_id_df
-
-
-
-
-# page_df = read_parquet("page")
-# pagelinks_df = read_parquet("pagelinks")
-# redirect_df = read_parquet("redirect")
-# linktarget_df = read_parquet("linktarget")
-
-# # Step 1: Process Wiki data and extract mutual links
-# mutual_links_df = process_wiki_data(page_df, pagelinks_df, redirect_df, linktarget_df)
-
-# # Step 2: Find connected components
-# s3_bucket = "bhargaviraobucket"
-# s3_path = "s3://bhargaviraobucket/iteration_/"
-# final_components_df = find_connected_components(mutual_links_df, s3_bucket, s3_path)
-
-# # Show the final connected components
-# print("Final connected components:")
-# final_components_df.show()
