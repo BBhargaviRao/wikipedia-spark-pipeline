@@ -11,3 +11,10 @@
 Total points: 255/350 points
 Your code looks really good, it's well organized and easy to follow. Fix up your
 test suite and write your reflection, and you're good to go.
+
++25 for reflection
++20 the correct framework for tests is there, but something seems to be wrong
+    with your test set. No output is produced and your assertions for mutual 
+    links don't make much sense.
+
+Updated score: 300/350
