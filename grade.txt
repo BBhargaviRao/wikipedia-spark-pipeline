@@ -18,3 +18,7 @@ test suite and write your reflection, and you're good to go.
     links don't make much sense.
 
 Updated score: 300/350
+
++40 for correct files
+
+Updated score: 340/350
